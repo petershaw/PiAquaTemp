@@ -98,7 +98,6 @@ var crunchHours = function crunchHours(probe, date, updates, callback){
 		, max:	null
 		, min: 	null
 	};
-	
 	client.stream(
 		"SELECT * FROM by_minute WHERE probe_name = ? "
 		+"AND log_time >= ? AND log_time < ?;"
@@ -128,6 +127,9 @@ var crunchHours = function crunchHours(probe, date, updates, callback){
 		}
 	  })
 	  .on('end', function () {
+	  	if(!crunchdata.avg || !crunchdata.max || !crunchdata.min ){
+		  	return callback(null, null, probe, date, updates);
+ 		}
  		async.waterfall([
  			function insertIntoHours(done){			
  				client.execute(

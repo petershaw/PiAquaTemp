@@ -3,3 +3,11 @@ extends layout
 block content
   h1= title
   p Welcome to #{title}
+  h2 Last 30 minutes
+  #flot-30m-choices
+  .rowclose <br>
+  #flot-30m.bigchart &nbsp
+
+  
+block scripts
+  script(src="/javascripts/charts/30minutes")

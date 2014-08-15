@@ -1,0 +1,36 @@
+$(function() {
+	console.log("chart <%= element %>");
+
+	var datasets = <%- data %>;
+	
+	var choiceContainer = $("<%= element %>-choices");
+	$.each(datasets, function(key, val) {
+		choiceContainer.append("<div class='rowitem'><input type='checkbox' name='" + key +
+			"' checked='checked' id='id" + key + "'></input>" +
+			"<label for='id" + key + "'>"
+			+ val.label + "</label></div>");
+	});
+	
+	choiceContainer.find("input").click(plotAccordingToChoices);
+	
+	function plotAccordingToChoices() {
+		var data = [];
+		choiceContainer.find("input:checked").each(function () {
+			var key = $(this).attr("name");
+			if (key && datasets[key]) {
+				data.push(datasets[key]);
+			}
+		});
+
+		if (data.length > 0) {
+			$.plot("<%= element %>", data, {
+				xaxis: { mode: "time" }
+			});
+		}
+	}
+	plotAccordingToChoices();
+
+
+	
+
+});
