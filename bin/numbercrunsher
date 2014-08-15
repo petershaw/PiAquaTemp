@@ -1,0 +1,346 @@
+#!/usr/bin/env node
+
+var   moment 	= require('moment')
+	, async 	= require('async')
+	, cql 		= require('node-cassandra-cql')
+	, clc 		= require('cli-color')
+	;
+
+var lock = 0;
+var client = new cql.Client({hosts: ['localhost'], keyspace: 'aquatemp'});
+
+var willRelease = function willRelease(){
+	lock--;
+	if(lock == 0){
+		client.shutdown;
+		process.exit(0);
+	}
+}
+
+var crunchMinutes = function crunchMinutes(probe, date, updates, callback){
+	var crunchdata = {
+		  avg: 	0
+		, max:	null
+		, min: 	null
+	};
+	
+	client.stream(
+		"SELECT * FROM data_log WHERE date = ? AND probe_name = ? "
+		+"AND event_time >= ? AND event_time < ?;"
+		, [
+			  moment(date).format('YYYY-MM-DD')
+			, probe
+			, new Date(moment(date).format('YYYY-MM-DD hh:mm'))
+			, new Date(moment(date).add(1, 'minutes').format('YYYY-MM-DD hh:mm'))
+		]
+		, cql.types.consistencies.one)
+	  .on('readable', function () {
+		//readable is emitted as soon a row is received and parsed
+		var row;
+		while (row = this.read()) {
+			// minute
+			crunchdata.avg 
+				= +(( crunchdata.avg
+				+ row.payload ) /2).toFixed(4)
+				;
+			if( crunchdata.max == null || row.payload > crunchdata.max){
+				 crunchdata.max = row.payload;
+			}
+			if(crunchdata.min == null || row.payload < crunchdata.min){
+				 crunchdata.min = row.payload;
+			}
+		}
+	  })
+	  .on('end', function () {
+		async.waterfall([
+			function insertIntoMinutes(done){
+				client.execute(
+					"INSERT INTO aquatemp.by_minute (\
+						log_time, \
+						probe_name, \
+						payload) \
+					VALUES (\
+						"+ new Date(date).getTime() +",\
+						'"+ probe +"', \
+						{'avg' : "+ crunchdata.avg +" , 'max' : "+ crunchdata.max +" , 'min' : "+ crunchdata.min +" } \
+					 )"
+					, cql.types.consistencies.one
+					, function(err, result) {
+						done(null, err, result, probe, date, updates);
+					}
+				);
+			}
+			, function(err, result, probe, date, updates, done){
+				if(err){ done(err); }
+				client.execute(
+					'UPDATE aquatemp.task_needsupdate SET updates = updates +1 WHERE probe_name = ? AND date = ?'
+					, [ probe, moment(date).format('YYYY-MM-DD hh') ]
+					, cql.types.consistencies.one
+					, function(err, result) {
+						if(err){ console.error(err); }
+						done(err, result, probe, date, updates);
+					}
+				);
+			}
+		], function(err, result, probe, date, updates){
+			return callback(err, result, probe, date, updates);
+		});
+	  })
+	  .on('error', function (err) {
+		console.error(err);
+		return callback(err);
+	  });	
+}
+
+var crunchHours = function crunchHours(probe, date, updates, callback){
+	var crunchdata = {
+		  avg: 	0
+		, max:	null
+		, min: 	null
+	};
+	
+	client.stream(
+		"SELECT * FROM by_minute WHERE probe_name = ? "
+		+"AND log_time >= ? AND log_time < ?;"
+		, [
+			probe
+			, new Date(moment(date).format('YYYY-MM-DD hh:mm'))
+			, new Date(moment(date).add(1, 'hours').format('YYYY-MM-DD hh:mm'))
+		]
+		, cql.types.consistencies.one)
+	  .on('readable', function () {
+		//readable is emitted as soon a row is received and parsed
+		var row;
+		while (row = this.read()) {
+
+			// minute
+ 			crunchdata.avg 
+ 				= +(( crunchdata.avg
+ 				+ row.payload.avg ) /2).toFixed(4)
+ 				;
+ 			if( crunchdata.max == null || row.payload.max > crunchdata.max){
+ 				 crunchdata.max = row.payload.max;
+ 			}
+ 			if(crunchdata.min == null || row.payload.min < crunchdata.min){
+ 				 crunchdata.min = row.payload.min;
+ 			}
+ 			
+		}
+	  })
+	  .on('end', function () {
+ 		async.waterfall([
+ 			function insertIntoHours(done){			
+ 				client.execute(
+ 					"INSERT INTO aquatemp.by_hours (\
+						log_time, \
+						probe_name, \
+						payload) \
+					VALUES (\
+						"+ new Date(date+":00").getTime() +",\
+						'"+ probe +"', \
+						{'avg' : "+ crunchdata.avg +" , 'max' : "+ crunchdata.max +" , 'min' : "+ crunchdata.min +" } \
+					 )"
+ 					, cql.types.consistencies.one
+ 					, function(err, result) {
+ 						done(null, err, result, probe, date, updates);
+ 					}
+ 				);
+ 			}
+ 			, function(err, result, probe, date, updates, done){
+ 				if(err){ done(err); }
+ 				
+ 				client.execute(
+ 					'UPDATE aquatemp.task_needsupdate SET updates = updates +1 WHERE probe_name = ? AND date = ?'
+ 					, [probe, moment(date).format('YYYY-MM-DD')]
+ 					, cql.types.consistencies.one
+ 					, function(err, result) {
+ 						done(err, result, probe, date, updates);
+ 					}
+ 				);
+ 			}
+ 		], function(err, result, probe, date, updates){
+ 			return callback(err, result, probe, date, updates);
+ 		});
+	  })
+ 	  .on('error', function (err) {
+ 		console.error(err);
+ 		return callback(err);
+	  });	
+}
+
+var crunchDays = function crunchHours(probe, date, updates, callback){
+	var crunchdata = {
+		  avg: 	0
+		, max:	null
+		, min: 	null
+	};
+
+	client.stream(
+		"SELECT * FROM by_hours WHERE probe_name = ? "
+		+"AND log_time >= ? AND log_time < ?;"
+		, [
+			probe
+			, new Date(moment(date).format('YYYY-MM-DD hh:mm'))
+			, new Date(moment(date).add(1, 'days').format('YYYY-MM-DD hh:mm'))
+		]
+		, cql.types.consistencies.one)
+	  .on('readable', function () {
+		//readable is emitted as soon a row is received and parsed
+		var row;
+		while (row = this.read()) {
+			// minute
+ 			crunchdata.avg 
+ 				= +(( crunchdata.avg
+ 				+ row.payload.avg ) /2).toFixed(4)
+ 				;
+ 			if( crunchdata.max == null || row.payload.max > crunchdata.max){
+ 				 crunchdata.max = row.payload.max;
+ 			}
+ 			if(crunchdata.min == null || row.payload.min < crunchdata.min){
+ 				 crunchdata.min = row.payload.min;
+ 			}
+ 			
+		}
+	  })
+	  .on('end', function () {
+	  	if(!crunchdata.avg || !crunchdata.max || !crunchdata.min ){
+		  	return callback(null, null, probe, date, updates);
+ 		}
+	  	
+ 		client.execute(
+ 			"INSERT INTO aquatemp.by_days (\
+				log_time, \
+				probe_name, \
+				payload) \
+			VALUES (\
+				"+ new Date(date+" 00:00").getTime() +",\
+				'"+ probe +"', \
+				{'avg' : "+ crunchdata.avg +" , 'max' : "+ crunchdata.max +" , 'min' : "+ crunchdata.min +" } \
+			)"
+ 			, cql.types.consistencies.one
+ 			, function(err, result) {
+				return callback(err, result, probe, date, updates);
+ 			}
+ 		);
+	  })
+ 	  .on('error', function (err) {
+ 		console.error(err);
+ 		return callback(err);
+	  });	
+}
+
+var reset = function reset(probe, date, updates, callback){
+	var updates = +cql.types.Long.fromBits( updates.low, updates.high, updates.unsigned);
+	
+	client.execute(
+		'UPDATE aquatemp.task_needsupdate SET updates = updates -? WHERE probe_name = ? AND date = ?'
+		, [
+			  updates
+			, probe
+			, date
+		]
+		, cql.types.consistencies.one
+		, function(err, result) {
+			callback(err, result);
+		}
+	);
+}
+
+var remove = function remove(probe, date, callback){
+	// löschen = TTl ???
+	client.execute(
+		'DELETE FROM aquatemp.task_needsupdate WHERE date = ? AND probe_name = ?'
+		, [
+			  date		
+			, probe
+		]
+		, cql.types.consistencies.one
+		, function(err, result) {
+			callback(err, result);
+		}
+	);
+}
+
+lock++;
+client.stream('SELECT date, probe_name, updates FROM task_needsupdate', cql.types.consistencies.one)
+	.on('readable', function () {
+		//readable is emitted as soon a row is received and parsed
+		var row;
+		while (row = this.read()) {
+			console.log('There are %s updates for %s at %s', clc.red(row.updates), clc.green(row.probe_name), clc.blue(row.date));
+			
+			if(row.updates > 0){
+
+				if( row.date.length == 16){
+					// Crunch Minutes
+		  			lock++;
+					crunchMinutes(row.probe_name, row.date, row.updates, function doneCrunschingMinutes(err, results, probe, date, updates){
+						if(err){
+							return console.log(err); 
+						}
+						reset(probe, date, updates, function(err){
+							willRelease();
+							if(err){
+								return console.log(err); 
+							}
+						});
+					});
+				} 			
+			
+				else if(row.date.length == 13){
+					// Crunch Hours
+		  			lock++;
+ 					crunchHours(row.probe_name, row.date, row.updates, function doneCrunschingHours(err, results, probe, date, updates){
+ 						if(err){
+ 							return console.log(err); 
+ 						}
+  						reset(probe, date, updates, function(err){
+  							willRelease();
+							if(err){
+	  							return console.log(err);   								
+	  						}
+  						});
+ 					});				
+				}
+
+				else if(row.date.length == 10){
+					// Crunch Hours
+		  			lock++;
+ 					crunchDays(row.probe_name, row.date, row.updates, function doneCrunschingHours(err, results, probe, date, updates){
+ 						if(err){
+ 							return console.log(err); 
+ 						}
+  						reset(probe, date, updates, function(err){
+							if(err){
+	  							return console.log(err); 	
+	  						}
+	  						willRelease();						
+  						});
+ 				
+ 					});				
+				}
+							
+				else {
+					console.error("Unsupported length "+ row.date.length );
+				}
+				
+			}  else {
+				// was reset to 0 the last time, so remove the entry know. 
+				lock++
+				remove(row.probe_name, row.date, function(err, result){
+					if(err){
+						return console.log(err); 
+					}
+					willRelease();
+				});
+			}
+
+		}
+	})
+	.on('end', function () {
+		willRelease();
+	})
+	.on('error', function (err) {
+		console.error(err);
+	});
+	

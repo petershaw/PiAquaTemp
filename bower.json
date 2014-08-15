@@ -1,0 +1,30 @@
+{
+  "name": "AquaTemperature",
+  "version": "0.0.1",
+  "authors": [
+    "Peter Shaw<unthoughted@googlemail.com>"
+  ],
+  "description": "A temperature logger for the rasperry pi in node with cassandra.",
+  "main": "?",
+  "moduleType": [
+    "globals"
+  ],
+  "keywords": [
+    "Temperature",
+    "Logger",
+    "RasperryPi"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "~2.1.1",
+    "flot": "~0.8.3"
+  }
+}

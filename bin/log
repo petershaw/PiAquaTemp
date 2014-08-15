@@ -1,0 +1,59 @@
+#!/usr/bin/env node
+
+var   moment 	= require('moment')
+	, async 	= require('async')
+	, cql 		= require('node-cassandra-cql')
+	, clc 		= require('cli-color')
+	;
+
+
+var argv = require('optimist')
+    .usage('Usage: $0 -sensor [sensor-name] -value [integer-value] ')
+    .demand(['sensor','value'])
+    .alias('s', 'sensor')
+    .describe('s', 'sensor name, e.g. temp1')
+    .alias('v', 'value')
+    .describe('v', 'the sensor value, e.g. 20000')
+    .argv;
+
+
+var client = new cql.Client({hosts: ['localhost'], keyspace: 'aquatemp'});
+
+var queryLog = 'INSERT INTO aquatemp.data_log (probe_name, date, event_time, payload) VALUES (?, ?, ?, ?)';
+var queryTask = 'UPDATE aquatemp.task_needsupdate SET updates = updates +1 WHERE probe_name = ? AND date = ?';
+var consistency =  cql.types.consistencies.any
+
+// --- Write the data
+	async.parallel([
+		function insertLog(done){
+			client.execute(
+				queryLog
+				, [argv.sensor, moment().format('YYYY-MM-DD'), moment().format('YYYY-MM-DD hh:mm:ss'), parseFloat(argv.value)]
+				, consistency
+				, function(err, result) {
+					done(err, result);
+				}
+			);
+	    }
+	    , function insertLog(done){
+			client.execute(
+				queryTask
+				, [argv.sensor, moment().format('YYYY-MM-DD hh:mm')]
+				, cql.types.consistencies.one
+				, function(err, result) {
+					done(err, result);
+				}
+			);
+	    }
+	], function insertDone(err, results){
+		if(err){
+			console.log(clc.red("Error!")+ err.join("\n"));
+			client.shutdown();
+			process.exit(-1);
+		}
+		console.log(clc.green("OK."));
+		client.shutdown();
+		process.exit(0);
+	});
+	
+	
