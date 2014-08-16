@@ -1,4 +1,6 @@
-Still under heavy development.
-do not use it. 
+# PiAquaTemperature
 
+Log temperature on a raspery pi with node.js and cassandra
+
+- no doku, yet. sorry. 
 

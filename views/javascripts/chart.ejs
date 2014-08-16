@@ -7,11 +7,13 @@ $(function() {
 	$.each(datasets, function(key, val) {
 		choiceContainer.append("<div class='rowitem'><input type='checkbox' name='" + key +
 			"' checked='checked' id='id" + key + "'></input>" +
-			"<label for='id" + key + "'>"
+			"<label for='id" + key + "'>&nbsp;"
 			+ val.label + "</label></div>");
 	});
 	
-	choiceContainer.find("input").click(plotAccordingToChoices);
+	choiceContainer.find("input").click(function(){
+		plotAccordingToChoices(datasets)
+	});
 	
 	function plotAccordingToChoices(dataoverwrite) {
 		datasets = dataoverwrite || datasets;
@@ -22,7 +24,7 @@ $(function() {
 				data.push(datasets[key]);
 			}
 		});
-
+		$('<%= element %>').css('width', '100%');
 		if (data.length > 0) {
 			$.plot("<%= element %>", data, {
 				xaxis: { mode: "time" }
@@ -33,7 +35,7 @@ $(function() {
 
 	setInterval(function(){
 			$.ajax({
-				url: 'http://localhost:8000/data/minutes/30',
+				url: 'http://localhost:8000/data/<%= type %>/<%= period %>',
 				type: "GET",
 				dataType: "json",
 				success: plotAccordingToChoices

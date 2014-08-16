@@ -2,12 +2,23 @@ extends layout
 
 block content
   h1= title
-  p Welcome to #{title}
-  h2 Last 30 minutes
-  #flot-30m-choices
-  .rowclose <br>
-  #flot-30m.bigchart &nbsp
+  ul.nav.nav-tabs.nav-justified(role="tablist")
+    li.active
+      a(href="#30minutes", role="tab", data-toggle="tab") Last 30 minutes
+    li
+      a(href="#24hours", role="tab", data-toggle="tab") Last 24 hours
+
+  .tab-content
+    #30minutes.tab-pane.active
+      #flot-30m-choices
+      .rowclose <br>
+      #flot-30m.bigchart &nbsp
+    #24hours.tab-pane
+      #flot-24h-choices
+      .rowclose <br>
+      #flot-24h.bigchart &nbsp
 
   
 block scripts
-  script(src="/javascripts/charts/30minutes")
+  script(src="/javascripts/charts/minutes/30")
+  script(src="/javascripts/charts/hours/24")
