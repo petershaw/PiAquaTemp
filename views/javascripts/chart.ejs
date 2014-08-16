@@ -13,7 +13,8 @@ $(function() {
 	
 	choiceContainer.find("input").click(plotAccordingToChoices);
 	
-	function plotAccordingToChoices() {
+	function plotAccordingToChoices(dataoverwrite) {
+		datasets = dataoverwrite || datasets;
 		var data = [];
 		choiceContainer.find("input:checked").each(function () {
 			var key = $(this).attr("name");
@@ -30,7 +31,14 @@ $(function() {
 	}
 	plotAccordingToChoices();
 
-
+	setInterval(function(){
+			$.ajax({
+				url: 'http://localhost:8000/data/minutes/30',
+				type: "GET",
+				dataType: "json",
+				success: plotAccordingToChoices
+			});
+	}, 5000);
 	
 
 });
