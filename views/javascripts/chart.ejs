@@ -35,7 +35,7 @@ $(function() {
 
 	setInterval(function(){
 			$.ajax({
-				url: 'http://localhost:8000/data/<%= type %>/<%= period %>',
+				url: '/data/<%= type %>/<%= period %>',
 				type: "GET",
 				dataType: "json",
 				success: plotAccordingToChoices

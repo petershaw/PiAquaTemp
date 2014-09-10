@@ -47,7 +47,7 @@ var consistency =  cql.types.consistencies.any
 	    }
 	], function insertDone(err, results){
 		if(err){
-			console.log(clc.red("Error!")+ err.join("\n"));
+			console.log(clc.red("Error!"), err);
 			client.shutdown();
 			process.exit(-1);
 		}
