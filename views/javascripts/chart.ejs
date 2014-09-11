@@ -28,6 +28,12 @@ $(function() {
 		if (data.length > 0) {
 			$.plot("<%= element %>", data, {
 				xaxis: { mode: "time" }
+				,grid: {
+					show: true,
+					hoverable: true,
+					clickable: true,
+					autoHighlight: true
+				}
 			});
 		}
 	}
