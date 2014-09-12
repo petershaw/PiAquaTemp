@@ -30,8 +30,8 @@ var crunchMinutes = function crunchMinutes(probe, date, updates, callback){
 		, [
 			  moment(date).format('YYYY-MM-DD')
 			, probe
-			, new Date(moment(date).format('YYYY-MM-DD hh:mm'))
-			, new Date(moment(date).add(1, 'minutes').format('YYYY-MM-DD hh:mm'))
+			, new Date(moment(date).format('YYYY-MM-DD HH:mm'))
+			, new Date(moment(date).add(1, 'minutes').format('YYYY-MM-DD HH:mm'))
 		]
 		, cql.types.consistencies.one)
 	  .on('readable', function () {
@@ -74,7 +74,7 @@ var crunchMinutes = function crunchMinutes(probe, date, updates, callback){
 				if(err){ done(err); }
 				client.execute(
 					'UPDATE aquatemp.task_needsupdate SET updates = updates +1 WHERE probe_name = ? AND date = ?'
-					, [ probe, moment(date).format('YYYY-MM-DD hh') ]
+					, [ probe, moment(date).format('YYYY-MM-DD HH') ]
 					, cql.types.consistencies.one
 					, function(err, result) {
 						if(err){ console.error(err); }
@@ -103,8 +103,8 @@ var crunchHours = function crunchHours(probe, date, updates, callback){
 		+"AND log_time >= ? AND log_time < ?;"
 		, [
 			probe
-			, new Date(moment(date).format('YYYY-MM-DD hh:mm'))
-			, new Date(moment(date).add(1, 'hours').format('YYYY-MM-DD hh:mm'))
+			, new Date(moment(date).format('YYYY-MM-DD HH:mm'))
+			, new Date(moment(date).add(1, 'hours').format('YYYY-MM-DD HH:mm'))
 		]
 		, cql.types.consistencies.one)
 	  .on('readable', function () {
@@ -182,8 +182,8 @@ var crunchDays = function crunchHours(probe, date, updates, callback){
 		+"AND log_time >= ? AND log_time < ?;"
 		, [
 			probe
-			, new Date(moment(date).format('YYYY-MM-DD hh:mm'))
-			, new Date(moment(date).add(1, 'days').format('YYYY-MM-DD hh:mm'))
+			, new Date(moment(date).format('YYYY-MM-DD HH:mm'))
+			, new Date(moment(date).add(1, 'days').format('YYYY-MM-DD HH:mm'))
 		]
 		, cql.types.consistencies.one)
 	  .on('readable', function () {

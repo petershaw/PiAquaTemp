@@ -28,7 +28,7 @@ var consistency =  cql.types.consistencies.any
 		function insertLog(done){
 			client.execute(
 				queryLog
-				, [argv.sensor, moment().format('YYYY-MM-DD'), moment().format('YYYY-MM-DD hh:mm:ss'), parseFloat(argv.value)]
+				, [argv.sensor, moment().format('YYYY-MM-DD'), moment().format('YYYY-MM-DD HH:mm:ss'), parseFloat(argv.value)]
 				, consistency
 				, function(err, result) {
 					done(err, result);
@@ -38,7 +38,7 @@ var consistency =  cql.types.consistencies.any
 	    , function insertLog(done){
 			client.execute(
 				queryTask
-				, [argv.sensor, moment().format('YYYY-MM-DD hh:mm')]
+				, [argv.sensor, moment().format('YYYY-MM-DD HH:mm')]
 				, cql.types.consistencies.one
 				, function(err, result) {
 					done(err, result);
