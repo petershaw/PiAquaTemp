@@ -5,6 +5,7 @@ do
   sensorlist=`ls -v /sys/bus/w1/devices/ | grep ^[0-9]`
   for S in $sensorlist
   do
+  	echo "Read sensor ${S}"
     temp=`cat /sys/bus/w1/devices/${S}/w1_slave | sed -n 2p | cut -d' ' -f10 | cut -d'=' -f2`
     ./bin/log --sensor=${S} --value=$temp
   done
