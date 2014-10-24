@@ -39,6 +39,7 @@ var crunchMinutes = function crunchMinutes(probe, date, updates, callback){
 		var row;
 		while (row = this.read()) {
 			// minute
+console.log("P", row.payload);			
 			if(crunchdata.avg == 0){
 				crunchdata.avg = row.payload;
 			} else {
@@ -54,7 +55,7 @@ var crunchMinutes = function crunchMinutes(probe, date, updates, callback){
 				 crunchdata.min = row.payload;
 			}
 		}
-		
+console.log("A", crunchdata.avg);
 	  })
 	  .on('end', function () {
 		async.waterfall([
