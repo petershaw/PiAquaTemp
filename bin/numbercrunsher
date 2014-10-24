@@ -39,10 +39,14 @@ var crunchMinutes = function crunchMinutes(probe, date, updates, callback){
 		var row;
 		while (row = this.read()) {
 			// minute
-			crunchdata.avg 
-				= +(( crunchdata.avg
-				+ row.payload ) /2).toFixed(4)
-				;
+			if(crunchdata.avg == 0){
+				crunchdata.avg = row.payload;
+			} else {
+				crunchdata.avg 
+					= +(( crunchdata.avg
+					+ row.payload ) /2).toFixed(4)
+					;
+			}
 			if( crunchdata.max == null || row.payload > crunchdata.max){
 				 crunchdata.max = row.payload;
 			}
@@ -50,6 +54,7 @@ var crunchMinutes = function crunchMinutes(probe, date, updates, callback){
 				 crunchdata.min = row.payload;
 			}
 		}
+		
 	  })
 	  .on('end', function () {
 		async.waterfall([
@@ -113,10 +118,14 @@ var crunchHours = function crunchHours(probe, date, updates, callback){
 		while (row = this.read()) {
 
 			// minute
- 			crunchdata.avg 
- 				= +(( crunchdata.avg
- 				+ row.payload.avg ) /2).toFixed(4)
- 				;
+			if(crunchdata.avg == 0){
+				crunchdata.avg = row.payload.avg;
+			} else {
+				crunchdata.avg 
+					= +(( crunchdata.avg
+					+ row.payload.avg ) /2).toFixed(4)
+					;
+			}
  			if( crunchdata.max == null || row.payload.max > crunchdata.max){
  				 crunchdata.max = row.payload.max;
  			}
@@ -191,10 +200,14 @@ var crunchDays = function crunchHours(probe, date, updates, callback){
 		var row;
 		while (row = this.read()) {
 			// minute
- 			crunchdata.avg 
- 				= +(( crunchdata.avg
- 				+ row.payload.avg ) /2).toFixed(4)
- 				;
+			if(crunchdata.avg == 0){
+				crunchdata.avg = row.payload.avg;
+			} else {
+	 			crunchdata.avg 
+ 					= +(( crunchdata.avg
+ 					+ row.payload.avg ) /2).toFixed(4)
+ 					;
+ 			}
  			if( crunchdata.max == null || row.payload.max > crunchdata.max){
  				 crunchdata.max = row.payload.max;
  			}
