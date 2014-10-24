@@ -38,8 +38,7 @@ var crunchMinutes = function crunchMinutes(probe, date, updates, callback){
 		//readable is emitted as soon a row is received and parsed
 		var row;
 		while (row = this.read()) {
-			// minute
-console.log("P", row.payload);			
+			// minute			
 			if(crunchdata.avg == 0){
 				crunchdata.avg = row.payload;
 			} else {
@@ -55,7 +54,6 @@ console.log("P", row.payload);
 				 crunchdata.min = row.payload;
 			}
 		}
-console.log("A", crunchdata.avg);
 	  })
 	  .on('end', function () {
 		async.waterfall([
